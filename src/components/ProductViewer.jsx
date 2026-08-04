@@ -9,12 +9,16 @@ const BULB_NAME_PARTS = [
   "bombilla",
   "foco",
   "led",
+  "emitter",
   "emissive",
   "emission",
 ];
 
 const LIGHT_HEIGHT_RATIO = 0.88;
 const SHOW_LIGHT_HELPER = false;
+const AUTO_LIGHT_DETECTION_ENABLED = true;
+const SHOW_DETECTED_LIGHTS = false;
+const DUPLICATE_LIGHT_DISTANCE = 0.08;
 
 const WARM_LIGHT_COLOR = new THREE.Color("#ffd29b");
 const NEUTRAL_LIGHT_COLOR = new THREE.Color("#fff4e0");
@@ -60,21 +64,159 @@ function disposeModel(model) {
   });
 }
 
+function getSelectedLightColor(lightColor) {
+  const fallbackColor = COLORS.find((color) => color.id === lightColor);
+  return LIGHT_COLORS[lightColor] ?? new THREE.Color(fallbackColor?.three ?? COLORS[0].three);
+}
+
+function getMaterials(material) {
+  if (!material) return [];
+  return Array.isArray(material) ? material : [material];
+}
+
+function materialHasVisibleEmissive(material) {
+  if (!material?.emissive) return false;
+
+  const emissiveIsNotBlack =
+    material.emissive.r > 0 ||
+    material.emissive.g > 0 ||
+    material.emissive.b > 0;
+  const emissiveIntensity = material.emissiveIntensity ?? 1;
+
+  return emissiveIsNotBlack && emissiveIntensity > 0;
+}
+
+function meshMatchesBulbName(mesh) {
+  const meshName = mesh.name.toLowerCase();
+  const materialName = getMaterials(mesh.material)
+    .map((material) => material?.name ?? "")
+    .join(" ")
+    .toLowerCase();
+  const searchableName = `${meshName} ${materialName}`;
+
+  return BULB_NAME_PARTS.some((part) => searchableName.includes(part));
+}
+
+function dedupeBulbMeshes(meshes) {
+  const accepted = [];
+
+  meshes.forEach((mesh) => {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = box.getCenter(new THREE.Vector3());
+    const isDuplicate = accepted.some(({ center: previousCenter }) =>
+      previousCenter.distanceTo(center) < DUPLICATE_LIGHT_DISTANCE,
+    );
+
+    if (!isDuplicate) {
+      accepted.push({ mesh, center });
+    }
+  });
+
+  return accepted.map(({ mesh }) => mesh);
+}
+
+function detectBulbMeshes(model) {
+  const nameMatches = [];
+  const emissiveMatches = [];
+
+  model.traverse((object) => {
+    if (!object.isMesh) return;
+
+    if (meshMatchesBulbName(object)) {
+      nameMatches.push(object);
+      return;
+    }
+
+    const hasEmissiveMaterial = getMaterials(object.material).some(materialHasVisibleEmissive);
+    if (hasEmissiveMaterial) {
+      emissiveMatches.push(object);
+    }
+  });
+
+  return dedupeBulbMeshes(nameMatches.length > 0 ? nameMatches : emissiveMatches);
+}
+
+function createLightsFromBulbs({ bulbMeshes, group, selectedColor }) {
+  const pointLights = [];
+  const spotLights = [];
+  const emissiveMaterials = [];
+  const helpers = [];
+
+  bulbMeshes.forEach((mesh) => {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const worldCenter = box.getCenter(new THREE.Vector3());
+    const localCenter = group.worldToLocal(worldCenter.clone());
+    const pointLight = new THREE.PointLight(selectedColor, 0, 3, 2);
+    const spotTarget = new THREE.Object3D();
+    const spotLight = new THREE.SpotLight(selectedColor, 0, 8, Math.PI / 5.5, 0.45, 1.8);
+
+    pointLight.position.copy(localCenter);
+    pointLight.castShadow = true;
+
+    spotLight.position.copy(localCenter);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
+    spotLight.shadow.bias = -0.0005;
+    spotLight.shadow.normalBias = 0.02;
+
+    spotTarget.position.set(localCenter.x, localCenter.y - 1, localCenter.z);
+    spotLight.target = spotTarget;
+
+    group.add(pointLight);
+    group.add(spotTarget);
+    group.add(spotLight);
+
+    getMaterials(mesh.material).forEach((material) => {
+      if (material?.emissive && !emissiveMaterials.includes(material)) {
+        emissiveMaterials.push(material);
+      }
+    });
+
+    if (SHOW_DETECTED_LIGHTS) {
+      const helper = new THREE.PointLightHelper(pointLight, 0.08);
+      group.add(helper);
+      helpers.push(helper);
+      console.log("Foco detectado:", {
+        mesh: mesh.name,
+        material: getMaterials(mesh.material).map((material) => material?.name ?? ""),
+        position: localCenter.toArray(),
+      });
+    }
+
+    pointLights.push(pointLight);
+    spotLights.push(spotLight);
+  });
+
+  if (SHOW_DETECTED_LIGHTS) {
+    console.log(`Total de focos detectados: ${bulbMeshes.length}`);
+  }
+
+  return {
+    pointLights,
+    spotLights,
+    emissiveMaterials,
+    helpers,
+  };
+}
+
 function applyLightState(rig, { isLightOn, lightColor, intensity }) {
   if (!rig) return;
 
-  const fallbackColor = COLORS.find((color) => color.id === lightColor);
-  const selectedColor =
-    LIGHT_COLORS[lightColor] ?? new THREE.Color(fallbackColor?.three ?? COLORS[0].three);
+  const selectedColor = getSelectedLightColor(lightColor);
   const normalizedIntensity = isLightOn
     ? THREE.MathUtils.clamp(intensity / 100, 0, 1)
     : 0;
 
-  rig.lampPoint.color.copy(selectedColor);
-  rig.lampSpot.color.copy(selectedColor);
+  rig.pointLights.forEach((pointLight) => {
+    pointLight.color.copy(selectedColor);
+    pointLight.intensity = normalizedIntensity * 1.5;
+  });
 
-  rig.lampPoint.intensity = normalizedIntensity * 1.5;
-  rig.lampSpot.intensity = normalizedIntensity * 18;
+  rig.spotLights.forEach((spotLight) => {
+    spotLight.color.copy(selectedColor);
+    spotLight.intensity = normalizedIntensity * 18;
+  });
 
   rig.emissiveMaterials.forEach((material) => {
     material.emissive.copy(selectedColor);
@@ -93,6 +235,7 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
 
     let isMounted = true;
     let loadedModel = null;
+    let fallbackSpotHelperDisposed = false;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111318);
@@ -183,9 +326,10 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
     }
 
     lightRigRef.current = {
-      lampPoint,
-      lampSpot,
+      pointLights: [lampPoint],
+      spotLights: [lampSpot],
       emissiveMaterials: [],
+      helpers: spotHelper ? [spotHelper] : [],
     };
 
     const fitCameraToModel = (model) => {
@@ -308,8 +452,38 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
         group.add(model);
         loadedModel = model;
 
-        lightRigRef.current.emissiveMaterials = findEmissiveMaterials(model);
-        placeLampLights(model);
+        const selectedColor = getSelectedLightColor(controlsRef.current.lightColor);
+        const detectedBulbs = detectBulbMeshes(model);
+        const shouldUseDetectedLights =
+          AUTO_LIGHT_DETECTION_ENABLED && detectedBulbs.length > 0;
+
+        if (shouldUseDetectedLights) {
+          lampPoint.intensity = 0;
+          lampSpot.intensity = 0;
+          group.remove(lampPoint);
+          group.remove(lampSpot);
+          group.remove(spotTarget);
+          if (spotHelper) {
+            scene.remove(spotHelper);
+            spotHelper.dispose();
+            fallbackSpotHelperDisposed = true;
+          }
+
+          lightRigRef.current = createLightsFromBulbs({
+            bulbMeshes: detectedBulbs,
+            group,
+            selectedColor,
+          });
+        } else {
+          lightRigRef.current = {
+            pointLights: [lampPoint],
+            spotLights: [lampSpot],
+            emissiveMaterials: findEmissiveMaterials(model),
+            helpers: spotHelper ? [spotHelper] : [],
+          };
+          placeLampLights(model);
+        }
+
         fitCameraToModel(model);
         applyLightState(lightRigRef.current, controlsRef.current);
       },
@@ -354,6 +528,32 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
 
       floor.geometry.dispose();
       floor.material.dispose();
+      const disposedLights = new Set();
+      const disposedHelpers = new Set();
+
+      lightRigRef.current?.pointLights.forEach((pointLight) => {
+        group.remove(pointLight);
+        if (!disposedLights.has(pointLight)) {
+          pointLight.dispose?.();
+          disposedLights.add(pointLight);
+        }
+      });
+      lightRigRef.current?.spotLights.forEach((spotLight) => {
+        group.remove(spotLight);
+        group.remove(spotLight.target);
+        if (!disposedLights.has(spotLight)) {
+          spotLight.dispose?.();
+          disposedLights.add(spotLight);
+        }
+      });
+      lightRigRef.current?.helpers.forEach((helper) => {
+        group.remove(helper);
+        scene.remove(helper);
+        if (!disposedHelpers.has(helper)) {
+          helper.dispose?.();
+          disposedHelpers.add(helper);
+        }
+      });
       group.remove(lampPoint);
       group.remove(lampSpot);
       group.remove(spotTarget);
@@ -362,10 +562,16 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
       scene.remove(fill);
       if (spotHelper) {
         scene.remove(spotHelper);
-        spotHelper.dispose();
+        if (!fallbackSpotHelperDisposed && !disposedHelpers.has(spotHelper)) {
+          spotHelper.dispose();
+        }
       }
-      lampPoint.dispose?.();
-      lampSpot.dispose?.();
+      if (!disposedLights.has(lampPoint)) {
+        lampPoint.dispose?.();
+      }
+      if (!disposedLights.has(lampSpot)) {
+        lampSpot.dispose?.();
+      }
       key.dispose?.();
       fill.dispose?.();
       ambient.dispose?.();
