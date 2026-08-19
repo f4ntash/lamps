@@ -19,6 +19,7 @@ const SHOW_LIGHT_HELPER = false;
 const AUTO_LIGHT_DETECTION_ENABLED = true;
 const SHOW_DETECTED_LIGHTS = false;
 const DUPLICATE_LIGHT_DISTANCE = 0.08;
+const SHOW_AXES_HELPER = false;
 
 const WARM_LIGHT_COLOR = new THREE.Color("#ffd29b");
 const NEUTRAL_LIGHT_COLOR = new THREE.Color("#fff4e0");
@@ -200,6 +201,24 @@ function createLightsFromBulbs({ bulbMeshes, group, selectedColor }) {
   };
 }
 
+function repositionModelAfterRotation(model, bottomY = 0) {
+  model.updateMatrixWorld(true);
+
+  let box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+
+  model.position.x -= center.x;
+  model.position.z -= center.z;
+
+  model.updateMatrixWorld(true);
+
+  box = new THREE.Box3().setFromObject(model);
+
+  model.position.y += bottomY - box.min.y;
+
+  model.updateMatrixWorld(true);
+}
+
 function applyLightState(rig, { isLightOn, lightColor, intensity }) {
   if (!rig) return;
 
@@ -224,7 +243,15 @@ function applyLightState(rig, { isLightOn, lightColor, intensity }) {
   });
 }
 
-export default function ProductViewer({ isLightOn, lightColor, intensity, modelUrl }) {
+export default function ProductViewer({
+  isLightOn,
+  lightColor,
+  intensity,
+  modelUrl,
+  rotation = 0,
+  rotationAxis = "y",
+  modelBottomY = 0,
+}) {
   const mountRef = useRef(null);
   const lightRigRef = useRef(null);
   const controlsRef = useRef({ isLightOn, lightColor, intensity });
@@ -332,8 +359,10 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
       helpers: spotHelper ? [spotHelper] : [],
     };
 
-    const fitCameraToModel = (model) => {
-      const fittedBox = new THREE.Box3().setFromObject(model);
+    const fitCameraToModel = (target) => {
+      target.updateMatrixWorld(true);
+
+      const fittedBox = new THREE.Box3().setFromObject(target);
       const fittedSize = fittedBox.getSize(new THREE.Vector3());
       const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
       const verticalFov = THREE.MathUtils.degToRad(camera.fov);
@@ -358,6 +387,9 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
     };
 
     const placeLampLights = (model) => {
+      group.updateMatrixWorld(true);
+      model.updateMatrixWorld(true);
+
       const fittedBox = new THREE.Box3().setFromObject(model);
       const fittedSize = fittedBox.getSize(new THREE.Vector3());
       const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
@@ -369,9 +401,14 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
         fittedCenter.z,
       );
 
-      lampPoint.position.copy(lightPosition);
-      lampSpot.position.copy(lightPosition);
-      spotTarget.position.set(fittedCenter.x, fittedBox.min.y, fittedCenter.z);
+      const localLightPosition = group.worldToLocal(lightPosition.clone());
+      const localTargetPosition = group.worldToLocal(
+        new THREE.Vector3(fittedCenter.x, fittedBox.min.y, fittedCenter.z),
+      );
+
+      lampPoint.position.copy(localLightPosition);
+      lampSpot.position.copy(localLightPosition);
+      spotTarget.position.copy(localTargetPosition);
       spotTarget.updateMatrixWorld();
     };
 
@@ -449,7 +486,45 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
 
         const model = gltf.scene;
         normalizeModel(model);
+        const rotationDegrees = Number(rotation) || 0;
+        const rotationRadians = THREE.MathUtils.degToRad(rotationDegrees);
+
+        switch (rotationAxis) {
+          case "x":
+            model.rotation.x = rotationRadians;
+            break;
+
+          case "z":
+            model.rotation.z = rotationRadians;
+            break;
+
+          case "y":
+          default:
+            model.rotation.y = rotationRadians;
+            break;
+        }
+
+        if (SHOW_AXES_HELPER) {
+          const axesHelper = new THREE.AxesHelper(5);
+          model.add(axesHelper);
+        }
+
+        model.updateMatrixWorld(true);
+        repositionModelAfterRotation(model, modelBottomY);
+        console.log("MODEL ROTATION DEBUG", {
+          rotationProp: rotation,
+          rotationAxis,
+          degrees: rotationDegrees,
+          radians: rotationRadians,
+          actualRotation: {
+            x: THREE.MathUtils.radToDeg(model.rotation.x),
+            y: THREE.MathUtils.radToDeg(model.rotation.y),
+            z: THREE.MathUtils.radToDeg(model.rotation.z),
+          },
+        });
+
         group.add(model);
+        group.updateMatrixWorld(true);
         loadedModel = model;
 
         const selectedColor = getSelectedLightColor(controlsRef.current.lightColor);
@@ -484,7 +559,8 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
           placeLampLights(model);
         }
 
-        fitCameraToModel(model);
+        group.updateMatrixWorld(true);
+        fitCameraToModel(group);
         applyLightState(lightRigRef.current, controlsRef.current);
       },
       undefined,
@@ -500,7 +576,8 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
       camera.updateProjectionMatrix();
 
       if (loadedModel) {
-        fitCameraToModel(loadedModel);
+        group.updateMatrixWorld(true);
+        fitCameraToModel(group);
       }
     };
 
@@ -580,7 +657,7 @@ export default function ProductViewer({ isLightOn, lightColor, intensity, modelU
       mount.removeChild(renderer.domElement);
       lightRigRef.current = null;
     };
-  }, [modelUrl]);
+  }, [modelUrl, rotation, rotationAxis, modelBottomY]);
 
   useEffect(() => {
     controlsRef.current = { isLightOn, lightColor, intensity };

@@ -13,7 +13,7 @@ const PRODUCTS = [
     id: 'hongo',
     name: 'Lámpara Hongo',
     description: 'Lámpara decorativa de mesa',
-    model: hongoModel
+    model: hongoModel,
   },
   {
     id: 'lamp1',
@@ -31,13 +31,19 @@ const PRODUCTS = [
     id: 'lamp3',
     name: 'Lámpara 3',
     description: 'Modelo de iluminación',
-    model: lamp3Model
+    model: lamp3Model,
+    rotation: 180,
+    rotationAxis: 'x',
+    modelBottomY: 3.5
   },
   {
     id: 'lamp4',
     name: 'Lámpara 4',
     description: 'Modelo de iluminación',
-    model: lamp4Model
+    model: lamp4Model,
+    rotation: 10,
+    rotationAxis: 'x',
+    modelBottomY: 2.5
   }
 ];
 

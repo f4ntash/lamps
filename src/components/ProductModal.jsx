@@ -67,6 +67,9 @@ export default function ProductModal({
         lightColor={lightColor}
         intensity={intensity}
         modelUrl={product.model}
+        rotation={product.rotation ?? 0}
+        rotationAxis={product.rotationAxis ?? "y"}
+        modelBottomY={product.modelBottomY ?? 0}
       />
     </section>
   );
