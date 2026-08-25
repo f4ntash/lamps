@@ -18,28 +18,28 @@ const PRODUCTS = [
   {
     id: 'lamp1',
     name: 'Aeris Pie',
-    description: 'Lámpara de pie LED 8W',
+    description: 'Frío metal al tacto. Lámpara de pie LED 8W',
     model: lamp1Model
   },
   {
     id: 'lamp2',
-    name: 'Lámpara 2',
-    description: 'Modelo de iluminación',
+    name: 'Velador Lëuven',
+    description: 'Una luz que se modula, creando atmósferas para cada instante.',
     model: lamp2Model
   },
   {
     id: 'lamp3',
-    name: 'Lámpara 3',
-    description: 'Modelo de iluminación',
+    name: 'Aurigny',
+    description: 'Lampara de techo, iluminación moderna, resultados infalibles.',
     model: lamp3Model,
     rotation: 180,
     rotationAxis: 'x',
-    modelBottomY: 3.5
+    modelBottomY: 2
   },
   {
     id: 'lamp4',
-    name: 'Lámpara 4',
-    description: 'Modelo de iluminación',
+    name: 'Lëuvens',
+    description: 'Un preciso haz que transforma cada rincón en una memoria',
     model: lamp4Model,
     rotation: 10,
     rotationAxis: 'x',
@@ -56,7 +56,7 @@ export default function App() {
   const handleSelectProduct = (product) => {
     setIsLightOn(false);
     setLightColor('warm');
-    setIntensity(100);
+    setIntensity(0);
     setSelectedProduct(product);
   };
 
