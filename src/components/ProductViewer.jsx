@@ -293,8 +293,8 @@ export default function ProductViewer({
     controls.minDistance = 1;
     controls.maxDistance = 15;
 
-    controls.minPolarAngle = Math.PI * 0.25;
-    controls.maxPolarAngle = Math.PI * 0.58;
+    controls.minPolarAngle = Math.PI * 0.12;
+    controls.maxPolarAngle = Math.PI * 0.88;
 
     controls.rotateSpeed = 0.5;
     controls.zoomSpeed = 1.2;

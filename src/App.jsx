@@ -10,12 +10,6 @@ import lamp4Model from './designs/Lamps/lamp4.glb?url';
 
 const PRODUCTS = [
   {
-    id: 'hongo',
-    name: 'Lámpara Hongo',
-    description: 'Lámpara decorativa de mesa',
-    model: hongoModel,
-  },
-  {
     id: 'lamp1',
     name: 'Aeris Pie',
     description: 'Frío metal al tacto. Lámpara de pie LED 8W',
@@ -33,15 +27,6 @@ const PRODUCTS = [
     description: 'Lampara de techo, iluminación moderna, resultados infalibles.',
     model: lamp3Model,
     rotation: 180,
-    rotationAxis: 'x',
-    modelBottomY: 2.5
-  },
-  {
-    id: 'lamp4',
-    name: 'Lëuvens',
-    description: 'Un preciso haz que transforma cada rincón en una memoria',
-    model: lamp4Model,
-    rotation: 10,
     rotationAxis: 'x',
     modelBottomY: 2.5
   }
