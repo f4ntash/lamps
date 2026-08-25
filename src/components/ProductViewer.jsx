@@ -147,7 +147,7 @@ function createLightsFromBulbs({ bulbMeshes, group, selectedColor }) {
     const box = new THREE.Box3().setFromObject(mesh);
     const worldCenter = box.getCenter(new THREE.Vector3());
     const localCenter = group.worldToLocal(worldCenter.clone());
-    const pointLight = new THREE.PointLight(selectedColor, 0, 3, 2);
+    const pointLight = new THREE.PointLight(selectedColor, 0, 4.5, 2);
     const spotTarget = new THREE.Object3D();
     const spotLight = new THREE.SpotLight(selectedColor, 0, 8, Math.PI / 5.5, 0.45, 1.8);
 
@@ -229,17 +229,17 @@ function applyLightState(rig, { isLightOn, lightColor, intensity }) {
 
   rig.pointLights.forEach((pointLight) => {
     pointLight.color.copy(selectedColor);
-    pointLight.intensity = normalizedIntensity * 1.5;
+    pointLight.intensity = normalizedIntensity * 4.5;
   });
 
   rig.spotLights.forEach((spotLight) => {
     spotLight.color.copy(selectedColor);
-    spotLight.intensity = normalizedIntensity * 18;
+    spotLight.intensity = normalizedIntensity * 40;
   });
 
   rig.emissiveMaterials.forEach((material) => {
     material.emissive.copy(selectedColor);
-    material.emissiveIntensity = normalizedIntensity * 2.5;
+    material.emissiveIntensity = normalizedIntensity * 4;
   });
 }
 
@@ -278,6 +278,8 @@ export default function ProductViewer({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     mount.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -331,7 +333,7 @@ export default function ProductViewer({
     fill.position.set(-3, 2.5, 3);
     scene.add(fill);
 
-    const lampPoint = new THREE.PointLight(0xffd29b, 0, 2.2, 2);
+    const lampPoint = new THREE.PointLight(0xffd29b, 0, 4, 2);
     lampPoint.castShadow = true;
     group.add(lampPoint);
 

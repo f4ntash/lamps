@@ -23,7 +23,7 @@ const PRODUCTS = [
   },
   {
     id: 'lamp2',
-    name: 'Velador Lëuven',
+    name: 'Velador Fëavan',
     description: 'Una luz que se modula, creando atmósferas para cada instante.',
     model: lamp2Model
   },
@@ -34,7 +34,7 @@ const PRODUCTS = [
     model: lamp3Model,
     rotation: 180,
     rotationAxis: 'x',
-    modelBottomY: 2
+    modelBottomY: 2.5
   },
   {
     id: 'lamp4',
