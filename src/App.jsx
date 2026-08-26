@@ -47,12 +47,12 @@ const PRODUCTS = [
 export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isLightOn, setIsLightOn] = useState(false);
-  const [lightColor, setLightColor] = useState('warm');
+  const [lightColor, setLightColor] = useState('#ffd083');
   const [intensity, setIntensity] = useState(100);
 
   const handleSelectProduct = (product) => {
     setIsLightOn(false);
-    setLightColor('warm');
+    setLightColor('#ffd083');
     setIntensity(0);
     setSelectedProduct(product);
   };

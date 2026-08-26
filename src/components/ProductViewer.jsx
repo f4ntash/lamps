@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { COLORS } from "./ColorSelector.jsx";
 
 const BULB_NAME_PARTS = [
   "bulb",
@@ -21,13 +20,8 @@ const SHOW_DETECTED_LIGHTS = false;
 const DUPLICATE_LIGHT_DISTANCE = 0.08;
 const SHOW_AXES_HELPER = false;
 
-const WARM_LIGHT_COLOR = new THREE.Color("#ffd29b");
-const NEUTRAL_LIGHT_COLOR = new THREE.Color("#fff4e0");
-
-const LIGHT_COLORS = {
-  warm: WARM_LIGHT_COLOR,
-  neutral: NEUTRAL_LIGHT_COLOR,
-};
+const DEFAULT_LIGHT_COLOR = new THREE.Color("#ffd29b");
+const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 function disposeMaterial(material, disposedResources) {
   if (!material || disposedResources.has(material)) return;
@@ -66,8 +60,10 @@ function disposeModel(model) {
 }
 
 function getSelectedLightColor(lightColor) {
-  const fallbackColor = COLORS.find((color) => color.id === lightColor);
-  return LIGHT_COLORS[lightColor] ?? new THREE.Color(fallbackColor?.three ?? COLORS[0].three);
+  if (typeof lightColor === "string" && HEX_COLOR_PATTERN.test(lightColor)) {
+    return new THREE.Color(lightColor);
+  }
+  return DEFAULT_LIGHT_COLOR;
 }
 
 function getMaterials(material) {
@@ -229,17 +225,17 @@ function applyLightState(rig, { isLightOn, lightColor, intensity }) {
 
   rig.pointLights.forEach((pointLight) => {
     pointLight.color.copy(selectedColor);
-    pointLight.intensity = normalizedIntensity * 4.5;
+    pointLight.intensity = normalizedIntensity * 7;
   });
 
   rig.spotLights.forEach((spotLight) => {
     spotLight.color.copy(selectedColor);
-    spotLight.intensity = normalizedIntensity * 40;
+    spotLight.intensity = normalizedIntensity * 65;
   });
 
   rig.emissiveMaterials.forEach((material) => {
     material.emissive.copy(selectedColor);
-    material.emissiveIntensity = normalizedIntensity * 4;
+    material.emissiveIntensity = normalizedIntensity * 6;
   });
 }
 
