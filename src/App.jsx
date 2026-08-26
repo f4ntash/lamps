@@ -11,14 +11,14 @@ import lamp4Model from './designs/Lamps/lamp4.glb?url';
 const PRODUCTS = [
   {
     id: 'lamp0',
-    name: 'Hongo',
-    description: 'Lámpara de pie con diseño orgánico.',
+    name: 'Conde',
+    description: 'Lámpara de pie con diseño ancestral.',
     model: hongoModel
   },
   {
     id: 'lamp1',
     name: 'Aeris Pie',
-    description: 'Frío metal al tacto. Lámpara de pie LED 8W. \nTamaño: 120 cm x 30 cm x 30 cm. \nColor: Negro metalizado, blanco mate. \nPrecio: $199.99',
+    description: 'Lámpara de pie con LED 8W. Tamaño: 120 cm x 30 cm x 30 cm.',
     model: lamp1Model
   },
   {
@@ -38,8 +38,8 @@ const PRODUCTS = [
   },
   {
     id: 'lamp4',
-    name: 'Lamp4',
-    description: 'Descripción de la lámpara 4.',
+    name: 'Velador Wood',
+    description: 'Lampara para dormitorio, materiales robustos y diseño clasico',
     model: lamp4Model
   }
 ];
@@ -49,11 +49,13 @@ export default function App() {
   const [isLightOn, setIsLightOn] = useState(false);
   const [lightColor, setLightColor] = useState('#ffd083');
   const [intensity, setIntensity] = useState(100);
+  const [lampMaterial, setLampMaterial] = useState('original');
 
   const handleSelectProduct = (product) => {
     setIsLightOn(false);
     setLightColor('#ffd083');
     setIntensity(0);
+    setLampMaterial('original');
     setSelectedProduct(product);
   };
 
@@ -70,6 +72,8 @@ export default function App() {
           setLightColor={setLightColor}
           intensity={intensity}
           setIntensity={setIntensity}
+          lampMaterial={lampMaterial}
+          setLampMaterial={setLampMaterial}
         />
       ) : (
         <ProductGallery products={PRODUCTS} onSelectProduct={handleSelectProduct} />

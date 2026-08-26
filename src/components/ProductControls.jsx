@@ -1,4 +1,5 @@
 import ColorSelector from './ColorSelector.jsx';
+import MaterialSelector from './MaterialSelector.jsx';
 
 export default function ProductControls({
   isLightOn,
@@ -6,7 +7,9 @@ export default function ProductControls({
   lightColor,
   setLightColor,
   intensity,
-  setIntensity
+  setIntensity,
+  lampMaterial,
+  setLampMaterial
 }) {
   return (
     <div className="product-controls" aria-label="Controles de iluminación">
@@ -36,6 +39,10 @@ export default function ProductControls({
           aria-valuetext={`${intensity} por ciento`}
         />
       </label>
+
+      <hr className="controls-divider" aria-hidden="true" />
+
+      <MaterialSelector selectedFinish={lampMaterial} onChange={setLampMaterial} />
     </div>
   );
 }

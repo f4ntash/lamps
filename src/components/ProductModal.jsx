@@ -13,7 +13,9 @@ export default function ProductModal({
   lightColor,
   setLightColor,
   intensity,
-  setIntensity
+  setIntensity,
+  lampMaterial,
+  setLampMaterial
 }) {
   const closeButtonRef = useRef(null);
 
@@ -59,6 +61,8 @@ export default function ProductModal({
           setLightColor={setLightColor}
           intensity={intensity}
           setIntensity={setIntensity}
+          lampMaterial={lampMaterial}
+          setLampMaterial={setLampMaterial}
         />
       </aside>
 
@@ -66,6 +70,7 @@ export default function ProductModal({
         isLightOn={isLightOn}
         lightColor={lightColor}
         intensity={intensity}
+        materialFinish={lampMaterial}
         modelUrl={product.model}
         rotation={product.rotation ?? 0}
         rotationAxis={product.rotationAxis ?? "y"}

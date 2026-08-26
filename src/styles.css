@@ -95,6 +95,7 @@ body {
 .close-button:focus-visible,
 .power-button:focus-visible,
 .color-option:focus-visible,
+.material-option:focus-visible,
 .product-card:focus-visible,
 .reopen-button:focus-visible {
   outline: 3px solid rgba(255, 208, 131, 0.82);
@@ -492,6 +493,91 @@ input[type="range"]:focus-visible {
   border-color: var(--swatch-color, rgba(255, 255, 255, 0.4));
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
+}
+
+.controls-divider {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.material-selector {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.material-selector legend {
+  display: flex;
+  width: 100%;
+  margin-bottom: 14px;
+  color: #eee8dd;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.material-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.material-option {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #ded7cd;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.material-option:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.075);
+  color: #fff8ef;
+}
+
+.material-option:active {
+  transform: scale(0.985);
+}
+
+.material-option-selected {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.material-swatch {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+}
+
+.swatch-original {
+  background: conic-gradient(from 180deg, #d9d1c7, #5d626b, #d9d1c7);
+}
+
+.swatch-metal {
+  background: linear-gradient(135deg, #e4e7ec 0%, #9aa0aa 45%, #f4f6f8 65%, #7d838d 100%);
+}
+
+.swatch-white {
+  background: #f5f1e8;
+}
+
+.swatch-black {
+  background: #16171c;
 }
 
 .slider-field {

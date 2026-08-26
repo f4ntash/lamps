@@ -23,6 +23,13 @@ const SHOW_AXES_HELPER = false;
 const DEFAULT_LIGHT_COLOR = new THREE.Color("#ffd29b");
 const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+// Acabados disponibles para el CUERPO de la lámpara (no afecta al foco/luz).
+const MATERIAL_FINISHES = {
+  metal: { color: new THREE.Color("#b8bcc4"), metalness: 0.92, roughness: 0.22 },
+  white: { color: new THREE.Color("#f5f1e8"), metalness: 0.06, roughness: 0.5 },
+  black: { color: new THREE.Color("#15161b"), metalness: 0.18, roughness: 0.38 },
+};
+
 function disposeMaterial(material, disposedResources) {
   if (!material || disposedResources.has(material)) return;
 
@@ -57,6 +64,55 @@ function disposeModel(model) {
 
     disposeMaterial(object.material, disposedResources);
   });
+}
+
+function isBulbMesh(mesh) {
+  return meshMatchesBulbName(mesh);
+}
+
+function collectBodyMeshes(model) {
+  const meshes = [];
+
+  model.traverse((object) => {
+    if (object.isMesh && !isBulbMesh(object)) {
+      meshes.push(object);
+    }
+  });
+
+  return meshes;
+}
+
+function createFinishMaterial(originalMaterial, preset) {
+  const material = originalMaterial.clone();
+  material.map = null;
+
+  if (material.color) material.color.copy(preset.color);
+  if ("metalness" in material) material.metalness = preset.metalness;
+  if ("roughness" in material) material.roughness = preset.roughness;
+
+  material.needsUpdate = true;
+  return material;
+}
+
+function applyFinishToMesh(entry, finish) {
+  const preset = MATERIAL_FINISHES[finish];
+
+  if (!preset) {
+    entry.mesh.material = entry.originalMaterial;
+    return;
+  }
+
+  if (!entry.overrideCache[finish]) {
+    entry.overrideCache[finish] = Array.isArray(entry.originalMaterial)
+      ? entry.originalMaterial.map((material) => createFinishMaterial(material, preset))
+      : createFinishMaterial(entry.originalMaterial, preset);
+  }
+
+  entry.mesh.material = entry.overrideCache[finish];
+}
+
+function applyMaterialFinish(bodyMeshes, finish) {
+  bodyMeshes.forEach((entry) => applyFinishToMesh(entry, finish));
 }
 
 function getSelectedLightColor(lightColor) {
@@ -247,10 +303,13 @@ export default function ProductViewer({
   rotation = 0,
   rotationAxis = "y",
   modelBottomY = 0,
+  materialFinish = "original",
 }) {
   const mountRef = useRef(null);
   const lightRigRef = useRef(null);
+  const bodyMeshesRef = useRef([]);
   const controlsRef = useRef({ isLightOn, lightColor, intensity });
+  const materialFinishRef = useRef(materialFinish);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -557,6 +616,13 @@ export default function ProductViewer({
           placeLampLights(model);
         }
 
+        bodyMeshesRef.current = collectBodyMeshes(model).map((mesh) => ({
+          mesh,
+          originalMaterial: mesh.material,
+          overrideCache: {},
+        }));
+        applyMaterialFinish(bodyMeshesRef.current, materialFinishRef.current);
+
         group.updateMatrixWorld(true);
         fitCameraToModel(group);
         applyLightState(lightRigRef.current, controlsRef.current);
@@ -597,6 +663,17 @@ export default function ProductViewer({
       window.removeEventListener("resize", resize);
 
       if (loadedModel) {
+        const disposedOverrides = new Set();
+        bodyMeshesRef.current.forEach((entry) => {
+          entry.mesh.material = entry.originalMaterial;
+          Object.values(entry.overrideCache).forEach((materialOrArray) => {
+            getMaterials(materialOrArray).forEach((material) =>
+              disposeMaterial(material, disposedOverrides),
+            );
+          });
+        });
+        bodyMeshesRef.current = [];
+
         group.remove(loadedModel);
         disposeModel(loadedModel);
       }
@@ -661,6 +738,11 @@ export default function ProductViewer({
     controlsRef.current = { isLightOn, lightColor, intensity };
     applyLightState(lightRigRef.current, controlsRef.current);
   }, [isLightOn, lightColor, intensity]);
+
+  useEffect(() => {
+    materialFinishRef.current = materialFinish;
+    applyMaterialFinish(bodyMeshesRef.current, materialFinish);
+  }, [materialFinish]);
 
   return (
     <section className="product-viewer" aria-label="Vista 3D del producto">
