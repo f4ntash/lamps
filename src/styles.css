@@ -222,6 +222,7 @@ body {
   color: #cfc8bd;
   font-size: 0.92rem;
   line-height: 1.45;
+  white-space: pre-line;
 }
 
 .card-action {
@@ -275,6 +276,7 @@ input[type="range"]:focus-visible {
   color: #cfc8bd;
   font-size: 0.95rem;
   line-height: 1.72;
+  white-space: pre-line;
 }
 
 .light-status {
