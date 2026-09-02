@@ -1,5 +1,6 @@
 import React from "react";
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import CorstenoLink from './components/CorstenoLink.jsx';
 import ProductModal from './components/ProductModal.jsx';
 import ProductGallery from './components/ProductGallery.jsx';
 import hongoModel from './designs/Lamps/lamp0.glb?url';
@@ -50,14 +51,59 @@ export default function App() {
   const [lightColor, setLightColor] = useState('#ffd083');
   const [intensity, setIntensity] = useState(100);
   const [lampMaterial, setLampMaterial] = useState('original');
+  const [isModelTransitioning, setIsModelTransitioning] = useState(false);
+  const transitionTimeoutsRef = useRef([]);
 
   const handleSelectProduct = (product) => {
     setIsLightOn(false);
     setLightColor('#ffd083');
-    setIntensity(0);
+    setIntensity(90);
     setLampMaterial('original');
     setSelectedProduct(product);
   };
+
+  const handleExploreRandomModel = () => {
+    const availableProducts = PRODUCTS.filter(
+      (product) =>
+        product.model && product.id !== selectedProduct?.id,
+    );
+    const randomProducts =
+      availableProducts.length > 0
+        ? availableProducts
+        : PRODUCTS.filter((product) => product.model);
+    const randomProduct =
+      randomProducts[
+        Math.floor(Math.random() * randomProducts.length)
+      ];
+
+    if (!randomProduct) return;
+
+    transitionTimeoutsRef.current.forEach((timeoutId) =>
+      window.clearTimeout(timeoutId),
+    );
+    transitionTimeoutsRef.current = [];
+    setIsModelTransitioning(true);
+
+    const selectTimeout = window.setTimeout(() => {
+      handleSelectProduct(randomProduct);
+    }, 420);
+    const finishTimeout = window.setTimeout(() => {
+      setIsModelTransitioning(false);
+    }, 1200);
+
+    transitionTimeoutsRef.current = [
+      selectTimeout,
+      finishTimeout,
+    ];
+  };
+
+  useEffect(() => {
+    return () => {
+      transitionTimeoutsRef.current.forEach((timeoutId) =>
+        window.clearTimeout(timeoutId),
+      );
+    };
+  }, []);
 
   return (
     <main className="app-shell">
@@ -76,8 +122,37 @@ export default function App() {
           setLampMaterial={setLampMaterial}
         />
       ) : (
-        <ProductGallery products={PRODUCTS} onSelectProduct={handleSelectProduct} />
+        <ProductGallery
+          products={PRODUCTS}
+          onSelectProduct={handleSelectProduct}
+          onExploreRandomModel={handleExploreRandomModel}
+        />
       )}
+
+      {isModelTransitioning && (
+        <div
+          className="model-transition model-transition--visible"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="model-transition__content">
+            <span className="model-transition__brand">
+              CORSTENO
+            </span>
+
+            <span className="model-transition__text">
+              Cargando experiencia 3D...
+            </span>
+
+            <span
+              className="model-transition__progress"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      )}
+
+      <CorstenoLink />
     </main>
   );
 }
