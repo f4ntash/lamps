@@ -7,6 +7,10 @@ import {
   useState,
 } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import {
+  trackEvent,
+  trackPostGameCtaClicked,
+} from "../analytics/events";
 
 type Position = {
   x: number;
@@ -136,6 +140,7 @@ const CONTACT_FORM_ENDPOINT =
   import.meta.env.VITE_CONTACT_FORM_ENDPOINT?.trim();
 const AUDIT_INTEREST = "Auditoría digital gratuita";
 const AUDIT_SOURCE = "lamp-game-audit";
+const ANALYTICS_FORM_SOURCE = "lighting_demo";
 const COMPACT_BOARD_WIDTH = 460;
 
 const INITIAL_AUDIT_FORM: AuditFormState = {
@@ -175,7 +180,17 @@ type LampDeconstructedProps = {
 export default function LampDeconstructed({
   onExploreRandomModel,
 }: LampDeconstructedProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const gameViewedRef = useRef(false);
+  const gameStartedRef = useRef(false);
+  const gameStartTimeRef = useRef<number | null>(null);
+  const gameCompletedTrackedRef = useRef(false);
+  const postGameUnlockedTrackedRef = useRef(false);
+  const postGameViewedTrackedRef = useRef(false);
+  const leadFormViewedTrackedRef = useRef(false);
+  const leadFormStartedTrackedRef = useRef(false);
+  const totalAttemptsRef = useRef(0);
 
   const dragRef = useRef<{
     id: string;
@@ -279,7 +294,15 @@ export default function LampDeconstructed({
   }
 
   function resetGame() {
+    const completedPieces = PARTS.filter(
+      (part) => parts[part.id]?.snapped
+    ).length;
     const nextState: Record<string, PartState> = {};
+
+    trackEvent("game_reset", {
+      completed_pieces: completedPieces,
+      total_pieces: PARTS.length,
+    });
 
     PARTS.forEach((part) => {
       nextState[part.id] = {
@@ -296,6 +319,54 @@ export default function LampDeconstructed({
     setAuditStatus("idle");
     setAuditError("");
     setParts(nextState);
+    gameStartedRef.current = false;
+    gameStartTimeRef.current = null;
+    gameCompletedTrackedRef.current = false;
+    postGameUnlockedTrackedRef.current = false;
+    postGameViewedTrackedRef.current = false;
+    leadFormViewedTrackedRef.current = false;
+    leadFormStartedTrackedRef.current = false;
+    totalAttemptsRef.current = 0;
+  }
+
+  function trackGameStarted() {
+    if (gameStartedRef.current) return;
+
+    gameStartedRef.current = true;
+    gameStartTimeRef.current = performance.now();
+    trackEvent("game_started", {
+      total_pieces: PARTS.length,
+    });
+  }
+
+  function handleRequestAuditClick() {
+    trackPostGameCtaClicked({
+      cta_id: "request_audit",
+      cta_label: "Solicitar auditoría gratis",
+      destination: "lead_form",
+      destination_type: "contact",
+    });
+    setIsAuditFormVisible(true);
+  }
+
+  function handleExploreModelsClick() {
+    trackPostGameCtaClicked({
+      cta_id: "explore_3d_models",
+      cta_label: "Explorar modelos 3D",
+      destination: "random_product_3d",
+      destination_type: "internal",
+    });
+    onExploreRandomModel?.();
+  }
+
+  function handleRestartClick() {
+    trackPostGameCtaClicked({
+      cta_id: "restart_game",
+      cta_label: "Volver a jugar",
+      destination: "lamp_game",
+      destination_type: "internal",
+    });
+    resetGame();
   }
 
   function handleAuditInputChange(
@@ -304,6 +375,13 @@ export default function LampDeconstructed({
       | ChangeEvent<HTMLTextAreaElement>
   ) {
     const { name, value } = event.target;
+
+    if (!leadFormStartedTrackedRef.current) {
+      leadFormStartedTrackedRef.current = true;
+      trackEvent("lead_form_started", {
+        source: ANALYTICS_FORM_SOURCE,
+      });
+    }
 
     setAuditForm((current) => ({
       ...current,
@@ -321,24 +399,40 @@ export default function LampDeconstructed({
   ) {
     event.preventDefault();
 
+    trackEvent("lead_form_submit_attempt", {
+      source: ANALYTICS_FORM_SOURCE,
+    });
+
     const name = auditForm.name.trim();
     const email = auditForm.email.trim();
     const company = auditForm.company.trim();
     const message = auditForm.message.trim();
 
     if (!name) {
+      trackEvent("lead_form_submit_error", {
+        source: ANALYTICS_FORM_SOURCE,
+        error_type: "validation_name",
+      });
       setAuditStatus("error");
       setAuditError("Ingresá tu nombre.");
       return;
     }
 
     if (!email || !isValidEmail(email)) {
+      trackEvent("lead_form_submit_error", {
+        source: ANALYTICS_FORM_SOURCE,
+        error_type: "validation_email",
+      });
       setAuditStatus("error");
       setAuditError("Ingresá un email válido.");
       return;
     }
 
     if (!message) {
+      trackEvent("lead_form_submit_error", {
+        source: ANALYTICS_FORM_SOURCE,
+        error_type: "validation_message",
+      });
       setAuditStatus("error");
       setAuditError("Contanos brevemente qué necesitás.");
       return;
@@ -348,6 +442,10 @@ export default function LampDeconstructed({
       console.error(
         "Falta configurar VITE_CONTACT_FORM_ENDPOINT para enviar el formulario de auditoría."
       );
+      trackEvent("lead_form_submit_error", {
+        source: ANALYTICS_FORM_SOURCE,
+        error_type: "missing_endpoint",
+      });
       setAuditStatus("error");
       setAuditError(
         "No está configurado el endpoint de contacto."
@@ -357,6 +455,7 @@ export default function LampDeconstructed({
 
     setAuditStatus("loading");
     setAuditError("");
+    let hasTrackedSubmitError = false;
 
     try {
       const response = await fetch(CONTACT_FORM_ENDPOINT, {
@@ -376,11 +475,26 @@ export default function LampDeconstructed({
       });
 
       if (!response.ok) {
+        hasTrackedSubmitError = true;
+        trackEvent("lead_form_submit_error", {
+          source: ANALYTICS_FORM_SOURCE,
+          error_type: "formspree_http_error",
+          status_code: response.status,
+        });
         throw new Error("Formspree request failed");
       }
 
+      trackEvent("lead_form_submit_success", {
+        source: ANALYTICS_FORM_SOURCE,
+      });
       setAuditStatus("success");
     } catch {
+      if (!hasTrackedSubmitError) {
+        trackEvent("lead_form_submit_error", {
+          source: ANALYTICS_FORM_SOURCE,
+          error_type: "network_error",
+        });
+      }
       setAuditStatus("error");
       setAuditError(
         "No pudimos enviar la solicitud. Probá de nuevo en unos minutos."
@@ -409,6 +523,35 @@ export default function LampDeconstructed({
 
     return () => {
       cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+
+    if (!section || gameViewedRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting || gameViewedRef.current) {
+          return;
+        }
+
+        gameViewedRef.current = true;
+        trackEvent("game_viewed", {
+          total_pieces: PARTS.length,
+        });
+        observer.disconnect();
+      },
+      {
+        threshold: 0.35,
+      }
+    );
+
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
     };
   }, []);
 
@@ -455,6 +598,24 @@ export default function LampDeconstructed({
       return;
     }
 
+    if (!gameCompletedTrackedRef.current) {
+      gameCompletedTrackedRef.current = true;
+      const completionTimeSeconds =
+        gameStartTimeRef.current === null
+          ? undefined
+          : Math.round(
+              ((performance.now() - gameStartTimeRef.current) /
+                1000) *
+                10
+            ) / 10;
+
+      trackEvent("game_completed", {
+        total_pieces: PARTS.length,
+        attempts: totalAttemptsRef.current,
+        completion_time_seconds: completionTimeSeconds,
+      });
+    }
+
     const timeout = window.setTimeout(() => {
       setCompleted(true);
     }, 500);
@@ -463,6 +624,47 @@ export default function LampDeconstructed({
       window.clearTimeout(timeout);
     };
   }, [parts, initialized]);
+
+  useEffect(() => {
+    if (!completed) return;
+
+    if (!postGameUnlockedTrackedRef.current) {
+      postGameUnlockedTrackedRef.current = true;
+      trackEvent("post_game_unlocked", {
+        total_pieces: PARTS.length,
+      });
+    }
+
+    if (!postGameViewedTrackedRef.current) {
+      const frame = requestAnimationFrame(() => {
+        if (postGameViewedTrackedRef.current) return;
+
+        postGameViewedTrackedRef.current = true;
+        trackEvent("post_game_viewed", {
+          total_pieces: PARTS.length,
+        });
+      });
+
+      return () => {
+        cancelAnimationFrame(frame);
+      };
+    }
+  }, [completed]);
+
+  useEffect(() => {
+    if (
+      !isAuditFormVisible ||
+      auditStatus === "success" ||
+      leadFormViewedTrackedRef.current
+    ) {
+      return;
+    }
+
+    leadFormViewedTrackedRef.current = true;
+    trackEvent("lead_form_viewed", {
+      source: ANALYTICS_FORM_SOURCE,
+    });
+  }, [auditStatus, isAuditFormVisible]);
 
   function handlePointerDown(
     event: ReactPointerEvent<HTMLImageElement>,
@@ -474,6 +676,7 @@ export default function LampDeconstructed({
     if (!board || !state || state.snapped) return;
 
     event.preventDefault();
+    trackGameStarted();
 
     const rect = board.getBoundingClientRect();
 
@@ -542,6 +745,11 @@ export default function LampDeconstructed({
 
     if (!currentState) return;
 
+    trackEvent("game_piece_dragged", {
+      piece_id: part.id,
+      piece_name: part.label,
+    });
+
     const target = getTargetPosition(part);
 
     const deltaX = currentState.position.x - target.x;
@@ -550,8 +758,33 @@ export default function LampDeconstructed({
     const distance = Math.sqrt(
       deltaX * deltaX + deltaY * deltaY
     );
+    const isCorrectDrop = distance <= SNAP_DISTANCE;
 
-    if (distance <= SNAP_DISTANCE) {
+    totalAttemptsRef.current += 1;
+    trackEvent("game_piece_placed", {
+      piece_id: part.id,
+      piece_name: part.label,
+      correct: isCorrectDrop,
+      attempt_number: totalAttemptsRef.current,
+    });
+
+    if (isCorrectDrop) {
+      const completedPieces = PARTS.filter(
+        (currentPart) =>
+          currentPart.id === part.id ||
+          parts[currentPart.id]?.snapped
+      ).length;
+
+      trackEvent("game_progress", {
+        piece_id: part.id,
+        piece_name: part.label,
+        completed_pieces: completedPieces,
+        total_pieces: PARTS.length,
+        percentage: Math.round(
+          (completedPieces / PARTS.length) * 100
+        ),
+      });
+
       setParts((current) => ({
         ...current,
         [part.id]: {
@@ -576,7 +809,7 @@ export default function LampDeconstructed({
   ).length;
 
   return (
-    <section className="lamp-game">
+    <section ref={sectionRef} className="lamp-game">
       <div className="lamp-game__header">
         <div>
           <span className="lamp-game__eyebrow">
@@ -717,9 +950,7 @@ export default function LampDeconstructed({
                   <button
                     type="button"
                     className="lamp-game__cta"
-                    onClick={() =>
-                      setIsAuditFormVisible(true)
-                    }
+                    onClick={handleRequestAuditClick}
                   >
                     Solicitar auditoría gratis
                   </button>
@@ -727,7 +958,7 @@ export default function LampDeconstructed({
                   <button
                     type="button"
                     className="lamp-game__restart"
-                    onClick={resetGame}
+                    onClick={handleRestartClick}
                   >
                     Volver a jugar
                   </button>
@@ -753,7 +984,7 @@ export default function LampDeconstructed({
                         <button
                           type="button"
                           className="lamp-game__secondary-cta lamp-game__secondary-cta--primary"
-                          onClick={onExploreRandomModel}
+                          onClick={handleExploreModelsClick}
                         >
                           Explorar modelos 3D
                         </button>
@@ -761,7 +992,7 @@ export default function LampDeconstructed({
                         <button
                           type="button"
                           className="lamp-game__restart"
-                          onClick={resetGame}
+                          onClick={handleRestartClick}
                         >
                           Volver a jugar
                         </button>

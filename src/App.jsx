@@ -9,6 +9,11 @@ import lamp2Model from './designs/Lamps/lamp2.glb?url';
 import lamp3Model from './designs/Lamps/lamp3.glb?url';
 import lamp4Model from './designs/Lamps/lamp4.glb?url';
 import Analytics from './analytics/analytics.tsx';
+import {
+  trackEvent,
+  trackProductClosed,
+  trackProductOpened,
+} from './analytics/events';
 
 const PRODUCTS = [
   {
@@ -56,11 +61,17 @@ export default function App() {
   const transitionTimeoutsRef = useRef([]);
 
   const handleSelectProduct = (product) => {
+    trackProductOpened(product);
     setIsLightOn(false);
     setLightColor('#ffd083');
     setIntensity(90);
     setLampMaterial('original');
     setSelectedProduct(product);
+  };
+
+  const handleCloseProduct = () => {
+    trackProductClosed(selectedProduct);
+    setSelectedProduct(null);
   };
 
   const handleExploreRandomModel = () => {
@@ -78,6 +89,12 @@ export default function App() {
       ];
 
     if (!randomProduct) return;
+
+    trackEvent('random_product_explored', {
+      from_product_id: selectedProduct?.id,
+      to_product_id: randomProduct.id,
+      to_product_name: randomProduct.name,
+    });
 
     transitionTimeoutsRef.current.forEach((timeoutId) =>
       window.clearTimeout(timeoutId),
@@ -113,7 +130,7 @@ export default function App() {
         <ProductModal
           product={selectedProduct}
           isOpen={Boolean(selectedProduct)}
-          onClose={() => setSelectedProduct(null)}
+          onClose={handleCloseProduct}
           isLightOn={isLightOn}
           setIsLightOn={setIsLightOn}
           lightColor={lightColor}

@@ -1,5 +1,9 @@
+import { useEffect } from "react";
+import { trackEvent } from "../analytics/events";
 import ProductCard from "./ProductCard.jsx";
 import LampDeconstructed from "./LampDeconstructed.jsx";
+
+let hasTrackedGalleryView = false;
 const copy = {
   es: {
     topbarLabel: "Iluminación interactiva",
@@ -29,6 +33,15 @@ export default function ProductGallery({
   locale = "es",
 }) {
   const t = copy[locale] ?? copy.es;
+
+  useEffect(() => {
+    if (hasTrackedGalleryView) return;
+
+    hasTrackedGalleryView = true;
+    trackEvent("product_gallery_view", {
+      products_count: products.length,
+    });
+  }, [products.length]);
  
   return (
     <main className="product-showcase">
