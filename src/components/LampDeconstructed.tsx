@@ -133,7 +133,7 @@ const PARTS: LampPart[] = [
 
 const SNAP_DISTANCE = 85;
 const CONTACT_FORM_ENDPOINT =
-  import.meta.env.VITE_CONTACT_FORM_ENDPOINT;
+  import.meta.env.VITE_CONTACT_FORM_ENDPOINT?.trim();
 const AUDIT_INTEREST = "Auditoría digital gratuita";
 const AUDIT_SOURCE = "lamp-game-audit";
 const COMPACT_BOARD_WIDTH = 460;
@@ -345,6 +345,9 @@ export default function LampDeconstructed({
     }
 
     if (!CONTACT_FORM_ENDPOINT) {
+      console.error(
+        "Falta configurar VITE_CONTACT_FORM_ENDPOINT para enviar el formulario de auditoría."
+      );
       setAuditStatus("error");
       setAuditError(
         "No está configurado el endpoint de contacto."

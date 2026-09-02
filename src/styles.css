@@ -251,6 +251,10 @@ a:focus-visible {
 
 .showcase-copy {
   max-width: 430px;
+
+  font-family:
+    "Sora",
+    sans-serif;
 }
 
 .showcase-copy__eyebrow {
@@ -261,37 +265,37 @@ a:focus-visible {
   color: var(--bronze);
 
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .showcase-copy h1 {
-  max-width: 430px;
+  max-width: 480px;
 
   margin: 0;
 
   color: var(--ink);
 
-  font-size: clamp(58px, 5vw, 82px);
-  font-weight: 450;
+  font-size: clamp(54px, 4.4vw, 74px);
+  font-weight: 600;
 
-  line-height: 1.06;
+  line-height: 1;
 
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
 }
 
 .showcase-copy p {
-  max-width: 390px;
+  max-width: 470px;
 
-  margin: 30px 0 0;
+  margin: 24px 0 0;
 
   color: var(--muted);
 
-  font-size: clamp(17px, 1.15vw, 19px);
+  font-size: clamp(16px, 1.08vw, 18px);
 
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 
@@ -1500,14 +1504,15 @@ input[type="range"]::-moz-range-thumb {
   .showcase-copy h1 {
     max-width: 610px;
 
-    font-size: clamp(38px, 8vw, 56px);
+    font-size: clamp(40px, 8vw, 56px);
+    line-height: 1.02;
     letter-spacing: -0.035em;
   }
 
   .showcase-copy p {
     max-width: 520px;
 
-    margin-top: 20px;
+    margin-top: 22px;
   }
 
   .showcase-product {
@@ -1542,6 +1547,7 @@ input[type="range"]::-moz-range-thumb {
 
   .showcase-copy h1 {
     font-size: clamp(36px, 10vw, 50px);
+    line-height: 1.04;
   }
 
   .showcase-copy p {
@@ -1677,7 +1683,8 @@ input[type="range"]::-moz-range-thumb {
 
   .showcase-copy h1 {
     font-size: clamp(40px, 13vw, 51px);
-    letter-spacing: 0;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
   }
 
   .showcase-copy p {
