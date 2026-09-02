@@ -8,7 +8,7 @@ declare global {
 }
 
 const measurementId = import.meta.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
-
+console.log("GA ID:", measurementId);
 function isLocalHostname(hostname: string) {
   return (
     hostname === "localhost" ||
