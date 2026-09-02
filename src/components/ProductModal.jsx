@@ -1,8 +1,6 @@
-import React from "react";
-import { useEffect, useRef } from 'react';
-import ProductInfo from './ProductInfo.jsx';
-import ProductControls from './ProductControls.jsx';
-import ProductViewer from './ProductViewer.jsx';
+import React, { useEffect, useRef } from "react";
+import ProductControls from "./ProductControls.jsx";
+import ProductViewer from "./ProductViewer.jsx";
 
 export default function ProductModal({
   product,
@@ -15,7 +13,7 @@ export default function ProductModal({
   intensity,
   setIntensity,
   lampMaterial,
-  setLampMaterial
+  setLampMaterial,
 }) {
   const closeButtonRef = useRef(null);
 
@@ -23,16 +21,18 @@ export default function ProductModal({
     if (!isOpen) return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
 
     closeButtonRef.current?.focus();
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
 
   return (
     <section
@@ -42,40 +42,54 @@ export default function ProductModal({
       aria-labelledby="product-title"
       aria-describedby="product-description"
     >
-      <button
-        ref={closeButtonRef}
-        className="close-button"
-        type="button"
-        onClick={onClose}
-        aria-label="Cerrar configurador"
-      >
-        <span aria-hidden="true">X</span>
-      </button>
+      <div className="product-modal__topbar">
+        <div className="product-modal__brand">
+          <span>CORSTENO</span>
+          <span>Configurador interactivo</span>
+        </div>
 
-      <aside className="product-sidebar">
-        <ProductInfo product={product} isLightOn={isLightOn} />
-        <ProductControls
+        <button
+          ref={closeButtonRef}
+          className="close-button"
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar configurador"
+        >
+          <span>Cerrar</span>
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+
+      <div className="product-modal__viewer">
+        <ProductViewer
           isLightOn={isLightOn}
-          setIsLightOn={setIsLightOn}
           lightColor={lightColor}
-          setLightColor={setLightColor}
           intensity={intensity}
-          setIntensity={setIntensity}
-          lampMaterial={lampMaterial}
-          setLampMaterial={setLampMaterial}
+          materialFinish={lampMaterial}
+          modelUrl={product.model}
+          rotation={product.rotation ?? 0}
+          rotationAxis={product.rotationAxis ?? "y"}
+          modelBottomY={product.modelBottomY ?? 0}
         />
-      </aside>
 
-      <ProductViewer
-        isLightOn={isLightOn}
-        lightColor={lightColor}
-        intensity={intensity}
-        materialFinish={lampMaterial}
-        modelUrl={product.model}
-        rotation={product.rotation ?? 0}
-        rotationAxis={product.rotationAxis ?? "y"}
-        modelBottomY={product.modelBottomY ?? 0}
-      />
+        <aside className="product-modal__controls">
+          <ProductControls
+            product={product}
+            isLightOn={isLightOn}
+            setIsLightOn={setIsLightOn}
+            lightColor={lightColor}
+            setLightColor={setLightColor}
+            intensity={intensity}
+            setIntensity={setIntensity}
+            lampMaterial={lampMaterial}
+            setLampMaterial={setLampMaterial}
+          />
+        </aside>
+
+        <div className="product-modal__hint">
+          Arrastrá para explorar
+        </div>
+      </div>
     </section>
   );
 }
