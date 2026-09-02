@@ -1,6 +1,6 @@
 import ColorSelector from './ColorSelector.jsx';
 import MaterialSelector from './MaterialSelector.jsx';
-
+import ProductInfo from './ProductInfo.jsx';
 export default function ProductControls({
   isLightOn,
   setIsLightOn,
@@ -9,10 +9,12 @@ export default function ProductControls({
   intensity,
   setIntensity,
   lampMaterial,
-  setLampMaterial
+  setLampMaterial,
+  product,
 }) {
   return (
     <div className="product-controls" aria-label="Controles de iluminación">
+                      <ProductInfo product={product} isLightOn={isLightOn} />
       <button
         className="power-button"
         type="button"
@@ -27,8 +29,7 @@ export default function ProductControls({
       <label className="slider-field" htmlFor="intensity-control">
         <span>
           Intensidad
-          <strong>{intensity}%</strong>
-        </span>
+        </span>          <strong>{intensity}%</strong>
         <input
           id="intensity-control"
           type="range"
@@ -43,6 +44,8 @@ export default function ProductControls({
       <hr className="controls-divider" aria-hidden="true" />
 
       <MaterialSelector selectedFinish={lampMaterial} onChange={setLampMaterial} />
+          
+      
     </div>
   );
 }
