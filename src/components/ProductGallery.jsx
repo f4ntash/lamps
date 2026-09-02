@@ -1,15 +1,18 @@
 import ProductCard from "./ProductCard.jsx";
-
+import LampDeconstructed from "./LampDeconstructed.jsx";
 const copy = {
   es: {
-    eyebrow: "Iluminación interactiva",
-    title: "Diseñá la luz antes de verla.",
+    topbarLabel: "Iluminación interactiva",
+    eyebrow: "DEMO INTERACTIVA",
+    title:
+      "Si podemos gamificar una lámpara, imaginá tu catálogo.",
     description:
-      "Explorá materiales, color e intensidad en tiempo real.",
+      "Arrastrá las piezas, armá el producto y descubrí qué se desbloquea al terminar.",
     cta: "Configurar ahora",
     collection: "Colección",
   },
   en: {
+    topbarLabel: "Interactive lighting",
     eyebrow: "Interactive lighting",
     title: "Design the light before you see it.",
     description:
@@ -22,55 +25,44 @@ const copy = {
 export default function ProductGallery({
   products,
   onSelectProduct,
+  onExploreRandomModel,
   locale = "es",
 }) {
   const t = copy[locale] ?? copy.es;
-  const featured = products[0];
-
+ 
   return (
     <main className="product-showcase">
       <section className="showcase-hero">
         <div className="showcase-topbar">
           <span className="showcase-brand">CORSTENO</span>
-          <span className="showcase-eyebrow">{t.eyebrow}</span>
+          <span className="showcase-eyebrow">
+            {t.topbarLabel}
+          </span>
         </div>
 
         <div className="showcase-main">
           <div className="showcase-copy">
+            <span className="showcase-copy__eyebrow">
+              {t.eyebrow}
+            </span>
+
             <h1>{t.title}</h1>
 
             <p>{t.description}</p>
 
-            {featured && (
-              <button
-                className="showcase-cta"
-                type="button"
-                onClick={() => onSelectProduct(featured)}
-              >
-                {t.cta}
-                <span aria-hidden="true">↗</span>
-              </button>
-            )}
           </div>
 
-          <div className="showcase-product" aria-hidden="true">
+          <div className="showcase-product">
             <div className="showcase-glow" />
             <div className="showcase-lamp">
-              <span className="showcase-lamp-shade" />
-              <span className="showcase-lamp-stem" />
-              <span className="showcase-lamp-base" />
+          <LampDeconstructed
+            onExploreRandomModel={onExploreRandomModel}
+          />
             </div>
-
-            {featured && (
-              <div className="showcase-featured-name">
-                <span>01</span>
-                <strong>{featured.name}</strong>
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="showcase-selector">
+        <div className="showcase-selector" id="modelos-3d">
           <span className="showcase-selector-label">{t.collection}</span>
 
           <div className="showcase-selector-list">
