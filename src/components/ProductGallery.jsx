@@ -29,7 +29,6 @@ export default function ProductGallery({
   locale = "es",
 }) {
   const t = copy[locale] ?? copy.es;
-  const featured = products[0];
  
   return (
     <main className="product-showcase">
@@ -51,16 +50,6 @@ export default function ProductGallery({
 
             <p>{t.description}</p>
 
-            {featured && (
-              <button
-                className="showcase-cta"
-                type="button"
-                onClick={() => onSelectProduct(featured)}
-              >
-                {t.cta}
-                <span aria-hidden="true">↗</span>
-              </button>
-            )}
           </div>
 
           <div className="showcase-product">
