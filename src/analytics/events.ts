@@ -74,9 +74,9 @@ export function initializeAnalytics(measurementId?: string) {
   window.dataLayer = window.dataLayer || [];
   window.gtag =
     window.gtag ||
-    ((...args: unknown[]) => {
-      window.dataLayer.push(args);
-    });
+    (function (...args: unknown[]) {
+      window.dataLayer.push(arguments);
+    } as (...args: unknown[]) => void);
 
   const existingScript = document.querySelector(
     `script[src*="googletagmanager.com/gtag/js?id=${activeMeasurementId}"]`
